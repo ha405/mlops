@@ -6,3 +6,5 @@ pydantic==2.6.3
 mlflow==2.13.0
 setuptools>=70.0.0
 pandas
+pytest==7.4.3
+httpx==0.25.0
