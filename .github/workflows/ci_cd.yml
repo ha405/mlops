@@ -15,10 +15,10 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4 
+      uses: actions/checkout@v4  
 
     - name: Set up Python
-      uses: actions/setup-python@v5 
+      uses: actions/setup-python@v5  
       with:
         python-version: '3.12'
         cache: 'pip'
@@ -26,15 +26,16 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools  # Essential for Python 3.12 + pkg_resources
+        pip install setuptools  
         pip install -r requirements.txt
         pip install pytest
 
-    - name: Run Tests
+    - name: Install Dependencies
       run: |
-        # This tells Python where your 'app' folder is
-        export PYTHONPATH=$PYTHONPATH:$(pwd)
-        pytest tests/ -v --tb=short
+        python -m pip install --upgrade pip
+        pip install setuptools  # This provides the missing pkg_resources
+        pip install -r requirements.txt
+        pip install pytest
 
   build-and-push:
     needs: test
@@ -52,7 +53,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build and Push Docker Image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v6 
       with:
         context: .
         push: true
