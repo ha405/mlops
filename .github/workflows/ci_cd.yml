@@ -30,11 +30,12 @@ jobs:
         pip install -r requirements.txt
         pip install pytest
 
-    - name: Run Tests
+    - name: Install Dependencies
       run: |
-        # Exporting PYTHONPATH ensures pytest finds the /app directory
-        export PYTHONPATH=$PYTHONPATH:$(pwd)
-        pytest tests/ -v --tb=short
+        python -m pip install --upgrade pip
+        pip install setuptools  # This provides the missing pkg_resources
+        pip install -r requirements.txt
+        pip install pytest
 
   build-and-push:
     needs: test

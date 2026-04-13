@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, BackgroundTasks
 from pydantic import BaseModel
 import os
-import pkg_resources
+from importlib import metadata
 import mlflow
 import time
 import pandas as pd
