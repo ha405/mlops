@@ -2,28 +2,14 @@ import pytest
 from fastapi.testclient import TestClient
 from app.serve import app
 import joblib
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import MagicMock
 import os
 
 
 @pytest.fixture
-def mock_model():
-    """Mock the iris model."""
-    model = MagicMock()
-    # setosa = 0, versicolor = 1, virginica = 2
-    model.predict.return_value = [0]
-    return model
-
-
-@pytest.fixture
-def client(mock_model):
-    """Create a test client for the API with mocked model."""
-    # Patch the model loading in the lifespan
-    with patch('joblib.load', return_value=mock_model):
-        with TestClient(app) as test_client:
-            # Ensure the app state has the mock model
-            test_client.app.state.model = mock_model
-            yield test_client
+def client():
+    """Create a test client for the API."""
+    return TestClient(app)
 
 
 def test_read_root(client):
@@ -33,8 +19,9 @@ def test_read_root(client):
     assert response.json() == {"status": "service functioning"}
 
 
-def test_predict_endpoint(client):
+def test_predict_endpoint(client, mock_model):
     """Test the prediction endpoint."""
+    mock_model.predict.return_value = [0]
     response = client.post(
         "/predict",
         json={
