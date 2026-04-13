@@ -15,10 +15,10 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4  # Use stable v4
+      uses: actions/checkout@v4 
 
     - name: Set up Python
-      uses: actions/setup-python@v5  # Use stable v5
+      uses: actions/setup-python@v5 
       with:
         python-version: '3.12'
         cache: 'pip'
@@ -26,21 +26,19 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install setuptools  # Fixes the 'pkg_resources' error in Python 3.12
+        pip install setuptools  # Essential for Python 3.12 + pkg_resources
         pip install -r requirements.txt
         pip install pytest
 
-    - name: Install Dependencies
+    - name: Run Tests
       run: |
-        python -m pip install --upgrade pip
-        pip install setuptools  # This provides the missing pkg_resources
-        pip install -r requirements.txt
-        pip install pytest
+        # This tells Python where your 'app' folder is
+        export PYTHONPATH=$PYTHONPATH:$(pwd)
+        pytest tests/ -v --tb=short
 
   build-and-push:
     needs: test
     runs-on: ubuntu-latest
-    # Only push on actual merges/pushes to main, not every PR sync
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
@@ -54,7 +52,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build and Push Docker Image
-      uses: docker/build-push-action@v6 # Action v6 is latest for Docker
+      uses: docker/build-push-action@v6
       with:
         context: .
         push: true
