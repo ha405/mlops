@@ -1,0 +1,29 @@
+services:
+  api:
+    build: .                 # Find the Dockerfile here and build it
+    ports:
+      - "8000:8000"          # Map local:8000 to Container:8000
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000 # Tell API where MLflow is
+    depends_on:
+      - mlflow               # Don't start API until MLflow is ready
+    networks:
+      - ml-net               # Join the "Private Internal Wi-Fi"
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.10.2 # Download this ready-made tool
+    ports:
+      - "5000:5000"          # Map local:5000 to Container:5000
+    volumes:
+      - mlflow_data:/mlruns  # Save data to hard drive, not just RAM
+    networks:
+      - ml-net               # Join the same "Private Internal Wi-Fi"
+    command: mlflow server --host 0.0.0.0 --port 5000
+
+# Defining the Infrastucture
+networks:
+  ml-net:                    # This creates the private bridge network
+    driver: bridge
+
+volumes:
+  mlflow_data:               # This creates the persistent storage space

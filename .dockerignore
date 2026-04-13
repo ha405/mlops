@@ -1,0 +1,14 @@
+venv/
+.venv/
+env/
+bin/
+lib/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.git/
+.gitignore
+.ipynb_checkpoints/
+.env
+.vscode/
+.idea/
