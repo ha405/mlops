@@ -2,13 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 from app.serve import app
 import joblib
-from unittest.mock import patch, MagicMock
-
-
-@pytest.fixture
-def client():
-    """Create a test client for the API."""
-    return TestClient(app)
+from unittest.mock import patch, MagicMock, AsyncMock
+import os
 
 
 @pytest.fixture
@@ -20,6 +15,17 @@ def mock_model():
     return model
 
 
+@pytest.fixture
+def client(mock_model):
+    """Create a test client for the API with mocked model."""
+    # Patch the model loading in the lifespan
+    with patch('joblib.load', return_value=mock_model):
+        with TestClient(app) as test_client:
+            # Ensure the app state has the mock model
+            test_client.app.state.model = mock_model
+            yield test_client
+
+
 def test_read_root(client):
     """Test the root endpoint."""
     response = client.get("/")
@@ -27,18 +33,17 @@ def test_read_root(client):
     assert response.json() == {"status": "service functioning"}
 
 
-def test_predict_endpoint(client, mock_model):
+def test_predict_endpoint(client):
     """Test the prediction endpoint."""
-    with patch.object(client.app.state, 'model', mock_model):
-        response = client.post(
-            "/predict",
-            json={
-                "sepal_length": 5.1,
-                "sepal_width": 3.5,
-                "petal_length": 1.4,
-                "petal_width": 0.2
-            }
-        )
+    response = client.post(
+        "/predict",
+        json={
+            "sepal_length": 5.1,
+            "sepal_width": 3.5,
+            "petal_length": 1.4,
+            "petal_width": 0.2
+        }
+    )
     
     assert response.status_code == 200
     data = response.json()
@@ -50,16 +55,15 @@ def test_predict_endpoint(client, mock_model):
 def test_predict_versicolor(client, mock_model):
     """Test prediction for versicolor iris."""
     mock_model.predict.return_value = [1]
-    with patch.object(client.app.state, 'model', mock_model):
-        response = client.post(
-            "/predict",
-            json={
-                "sepal_length": 6.0,
-                "sepal_width": 2.7,
-                "petal_length": 5.1,
-                "petal_width": 1.6
-            }
-        )
+    response = client.post(
+        "/predict",
+        json={
+            "sepal_length": 6.0,
+            "sepal_width": 2.7,
+            "petal_length": 5.1,
+            "petal_width": 1.6
+        }
+    )
     
     assert response.status_code == 200
     assert response.json()["prediction"] == "versicolor"
@@ -68,16 +72,15 @@ def test_predict_versicolor(client, mock_model):
 def test_predict_virginica(client, mock_model):
     """Test prediction for virginica iris."""
     mock_model.predict.return_value = [2]
-    with patch.object(client.app.state, 'model', mock_model):
-        response = client.post(
-            "/predict",
-            json={
-                "sepal_length": 7.0,
-                "sepal_width": 3.2,
-                "petal_length": 6.0,
-                "petal_width": 2.0
-            }
-        )
+    response = client.post(
+        "/predict",
+        json={
+            "sepal_length": 7.0,
+            "sepal_width": 3.2,
+            "petal_length": 6.0,
+            "petal_width": 2.0
+        }
+    )
     
     assert response.status_code == 200
     assert response.json()["prediction"] == "virginica"
