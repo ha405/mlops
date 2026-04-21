@@ -1,6 +1,6 @@
 services:
   api:
-    build: .                 # Find the Dockerfile here and build it
+    image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:latest
     ports:
       - "8000:8000"          # Map local:8000 to Container:8000
     environment:

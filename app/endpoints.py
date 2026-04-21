@@ -7,8 +7,19 @@ import time
 import pandas as pd
 
 MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-mlflow.set_tracking_uri(MLFLOW_URI)
-mlflow.set_experiment("iris_prediction_service")
+
+# Setup MLflow optionally
+def init_mlflow():
+    try:
+        mlflow.set_tracking_uri(MLFLOW_URI)
+        mlflow.set_experiment("iris_prediction_service")
+        print(f"MLflow initialized at {MLFLOW_URI}")
+        return True
+    except Exception as e:
+        print(f"MLflow initialization failed: {e}")
+        return False
+
+MLFLOW_CONFIGURED = init_mlflow()
 
 RESULTS_BUFFER = []
 BUFFER_THRESHOLD = 10

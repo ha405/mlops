@@ -1,11 +1,12 @@
-FROM public.ecr.aws/lambda/python:3.12
-
-# Copy requirements and install
-COPY requirements.txt ${LAMBDA_TASK_ROOT}
-RUN pip install -r requirements.txt
-
-# Copy all files
-COPY . ${LAMBDA_TASK_ROOT}
-
-# The Lambda handler (file_name.handler_name)
-CMD ["app.serve.handler"]
+FROM python:3.12-slim
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+WORKDIR /code
+RUN useradd -m -u 1000 appuser
+COPY requirements.txt .
+RUN python -m pip install --no-cache-dir --default-timeout=1000 -r requirements.txt
+COPY . .
+RUN chown -R appuser:appuser /code
+USER appuser
+EXPOSE 8000
+CMD ["python", "-m", "uvicorn", "app.serve:app", "--host", "0.0.0.0", "--port", "8000"]
