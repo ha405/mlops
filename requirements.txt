@@ -8,3 +8,4 @@ setuptools>=70.0.0
 pandas
 pytest==7.4.3
 httpx==0.25.0
+mangum==0.17.0

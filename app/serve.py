@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.endpoints import router as iris_router
 from contextlib import asynccontextmanager
 import joblib
+from mangum import Mangum
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,6 +14,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, title="Iris Prediction Service")
 app.include_router(iris_router)
+
 @app.get("/")
 def read_root():
     return {"status":"service functioning"}
+
+handler = Mangum(app)
