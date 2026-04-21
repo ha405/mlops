@@ -114,8 +114,7 @@ jobs:
           git pull origin main
 
           # 5. Deploy
-          export AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
-          export AWS_REGION=${{ secrets.AWS_REGION }}
-          export ECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}
+          cd ~/mlops-pipeline
+          printf "AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}\nAWS_REGION=${{ secrets.AWS_REGION }}\nECR_REPOSITORY=${{ secrets.ECR_REPOSITORY }}\n" > .env
           /usr/local/bin/docker-compose pull
           /usr/local/bin/docker-compose up -d

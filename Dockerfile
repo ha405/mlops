@@ -4,6 +4,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /code
 RUN useradd -m -u 1000 appuser
 COPY requirements.txt .
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools
 RUN python -m pip install --no-cache-dir --default-timeout=1000 -r requirements.txt
 COPY . .
 RUN chown -R appuser:appuser /code
