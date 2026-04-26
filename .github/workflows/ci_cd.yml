@@ -83,6 +83,16 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          # 0. Setup Swapfile (Prevent OOM on t2.micro)
+          if [ ! -f "/swapfile" ]; then
+            echo "Creating 2GB Swapfile..."
+            sudo fallocate -l 2G /swapfile
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+            echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+          fi
+
           # 1. Auto-install Docker and Git if missing
           if ! command -v docker &> /dev/null || ! command -v git &> /dev/null; then
             echo "Installing dependencies..."
