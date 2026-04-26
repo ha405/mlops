@@ -1,36 +1,12 @@
-from fastapi import APIRouter, Request, BackgroundTasks, File, UploadFile, HTTPException
+from fastapi import APIRouter, Request, File, UploadFile, HTTPException
 import os
-import mlflow
 import time
-import pandas as pd
 from PIL import Image
 import io
 import numpy as np
 import onnxruntime as ort
 
-MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
-
-# Setup MLflow optionally
-def init_mlflow():
-    try:
-        mlflow.set_tracking_uri(MLFLOW_URI)
-        mlflow.set_experiment("vision_classification_service")
-        print(f"MLflow initialized at {MLFLOW_URI}")
-        return True
-    except Exception as e:
-        print(f"MLflow initialization failed: {e}")
-        return False
-
-MLFLOW_CONFIGURED = init_mlflow()
-
-RESULTS_BUFFER = []
-BUFFER_THRESHOLD = 10
 router = APIRouter()
-
-def flush_to_mlflow(data):
-    df = pd.DataFrame(data)
-    with mlflow.start_run(run_name="buffer_flush"):
-        mlflow.log_table(data=df, artifact_file="predictions.json")
 
 def preprocess_image(image: Image.Image):
     """Preprocess image for ONNX model without using torch."""
@@ -50,7 +26,7 @@ def preprocess_image(image: Image.Image):
     return img_data
 
 @router.post("/predict")
-async def predict(request: Request, bg: BackgroundTasks, file: UploadFile = File(...)):
+async def predict(request: Request, file: UploadFile = File(...)):
     session = request.app.state.model
     class_names = request.app.state.class_names
     
@@ -82,18 +58,9 @@ async def predict(request: Request, bg: BackgroundTasks, file: UploadFile = File
     latency = (time.time() - start) * 1000
     result = class_names[top_catid]
 
-    # Log to buffer
-    log_entry = {
-        "filename": file.filename,
-        "prediction": result,
-        "confidence": confidence,
-        "latency_ms": latency
+    # Return prediction result without MLflow logging
+    return {
+        "prediction": result, 
+        "confidence": round(confidence, 4), 
+        "latency_ms": round(latency, 2)
     }
-    RESULTS_BUFFER.append(log_entry)
-
-    if len(RESULTS_BUFFER) >= BUFFER_THRESHOLD:
-        to_flush = RESULTS_BUFFER.copy()
-        RESULTS_BUFFER.clear()
-        bg.add_task(flush_to_mlflow, to_flush)
-        
-    return {"prediction": result, "confidence": confidence, "latency_ms": latency}

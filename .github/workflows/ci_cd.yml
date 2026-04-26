@@ -83,10 +83,10 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          # 0. Setup Swapfile (Prevent OOM on t2.micro)
-          if [ ! -f "/swapfile" ]; then
+          # 0. Setup Swapfile (Prevent OOM on t3.micro)
+          if ! swapon --show | grep -q "/swapfile"; then
             echo "Creating 2GB Swapfile..."
-            sudo fallocate -l 2G /swapfile
+            sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
             sudo chmod 600 /swapfile
             sudo mkswap /swapfile
             sudo swapon /swapfile
