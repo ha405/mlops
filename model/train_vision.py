@@ -66,6 +66,15 @@ def train_model(epochs=1, fast_dev_run=False, save_path='vision_model.pth'):
     # Save the model
     torch.save(model.state_dict(), save_path)
     print(f"Model saved to {save_path}")
+
+    # Export to ONNX for optimized inference
+    onnx_path = save_path.replace('.pth', '.onnx')
+    model.eval()
+    dummy_input = torch.randn(1, 3, 224, 224).to(device)
+    torch.onnx.export(model, dummy_input, onnx_path, 
+                      input_names=['input'], output_names=['output'],
+                      dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}})
+    print(f"Model exported to ONNX at {onnx_path}")
     
     # Save class labels mapping
     classes = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']

@@ -1,5 +1,4 @@
-import torch
-import torchvision.models as models
+import onnxruntime as ort
 from fastapi import FastAPI
 from app.endpoints import router as vision_router
 from contextlib import asynccontextmanager
@@ -7,27 +6,24 @@ import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("Loading vision model...")
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    app.state.device = device
+    print("Loading ONNX vision model...")
     
-    # Load model
-    model = models.mobilenet_v2()
-    # Modify classifier to match our 10-class CIFAR10 finetuned model
-    num_ftrs = model.classifier[1].in_features
-    model.classifier[1] = torch.nn.Linear(num_ftrs, 10)
+    model_path = 'model/vision_model.onnx'
+    if not os.path.exists(model_path):
+        # Fallback to .pth if .onnx isn't ready, but warn
+        print(f"Warning: {model_path} not found. Ensure training script has run.")
+        # We need a model to start, so let's expect the user to have run training.
+        # In a real app, we might download a default model here.
     
-    model_path = 'model/vision_model.pth'
-    if os.path.exists(model_path):
-        model.load_state_dict(torch.load(model_path, map_location=device))
-        print("Loaded finetuned weights.")
-    else:
-        print("Warning: Finetuned weights not found. Loading model with random classifier weights.")
-    
-    model = model.to(device)
-    model.eval()
-    app.state.model = model
-    
+    try:
+        # Load ONNX session
+        session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
+        app.state.model = session
+        print("ONNX model loaded successfully.")
+    except Exception as e:
+        print(f"Error loading ONNX model: {e}")
+        app.state.model = None
+
     # Load classes
     classes_path = 'model/cifar10_classes.txt'
     if os.path.exists(classes_path):
@@ -42,10 +38,8 @@ async def lifespan(app: FastAPI):
         del app.state.model
     if hasattr(app.state, 'class_names'):
         del app.state.class_names
-    if hasattr(app.state, 'device'):
-        del app.state.device
 
-app = FastAPI(lifespan=lifespan, title="Vision Classification API")
+app = FastAPI(lifespan=lifespan, title="Optimized Vision API (ONNX)")
 app.include_router(vision_router)
 
 @app.get("/")

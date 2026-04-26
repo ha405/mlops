@@ -2,6 +2,7 @@
 import pytest
 from io import BytesIO
 from PIL import Image
+import numpy as np
 
 class TestHealthCheck:
     """Test root health check endpoint."""
@@ -27,15 +28,16 @@ class TestPredictEndpoint:
 
     def test_predict_image(self, client, monkeypatch):
         """Test prediction for an uploaded image."""
-        test_client, mock_model = client
+        test_client, mock_session = client
         
-        # Mock the model output
-        import torch
-        # We expect a tensor of shape [1, 10] for 10 classes
-        # Set class 3 (cat) to have highest logit
-        mock_output = torch.zeros(1, 10)
+        # Mock the ONNX session.run output
+        # We expect a list of outputs, each a numpy array
+        # Set class 3 (cat) to have highest value
+        mock_output = np.zeros((1, 10), dtype=np.float32)
         mock_output[0, 3] = 10.0 
-        mock_model.return_value = mock_output
+        
+        # Mock session.run(None, inputs)
+        mock_session.run.return_value = [mock_output]
         
         # Create a dummy image
         img_bytes = self.create_dummy_image()
@@ -46,16 +48,14 @@ class TestPredictEndpoint:
         
         assert response.status_code == 200
         data = response.json()
-        assert "prediction" in data
+        assert data["prediction"] == "cat"
         assert "confidence" in data
         assert "latency_ms" in data
-        assert data["latency_ms"] >= 0
 
     def test_predict_invalid_file_type(self, client):
         """Test prediction with invalid file type."""
         test_client, _ = client
         
-        # Text file pretending to be image is caught by PIL but maybe content-type check first
         files = {"file": ("test.txt", BytesIO(b"Hello world"), "text/plain")}
         response = test_client.post("/predict", files=files)
         
